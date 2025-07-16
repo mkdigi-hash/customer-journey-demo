@@ -1,0 +1,8 @@
+PGADMIN_DEFAULT_EMAIL=probably@defualt.com
+PGADMIN_DEFAULT_PASSWORD=somethingsecretiveihope
+
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=somethingsecretiveihope
+POSTGRES_DBNAME=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=15432
