@@ -19,31 +19,45 @@ areas = ['Etching', 'Lithography', 'Metrology', 'Implantation', 'Chemical Mechan
 level_to_years = {1: 0.5, 2: 1.5, 3: 3.0, 4: 5.0, 5: 7.5}
 
 start_date = datetime(2025, 7, 1)
-end_date = datetime(2025, 7, 20)
+end_date = datetime(2025, 9, 12)
+
+# --- Create pool of 250 unique employees ---
+employee_pool = []
+for i in range(250):
+    emp_id = f"E{i+1}"
+    emp_level = random.choices([2, 3, 4, 5], weights=[0.2, 0.3, 0.3, 0.2])[0]
+    area = random.choice(areas)
+    employee_pool.append({
+        'employee_id': emp_id,
+        'employee_level': emp_level,
+        'area': area
+    })
 
 records = []
-emp_id_counter = 1000
 
 for day in pd.date_range(start_date, end_date):
     for shift in shifts:
-        is_low_period = datetime(2025, 7, 8) <= day <= datetime(2025, 7, 14)
+        # Define two separate low staffing periods
+        low_period_1 = datetime(2025, 7, 9) <= day <= datetime(2025, 7, 14)
+        low_period_2 = datetime(2025, 8, 1) <= day <= datetime(2025, 8, 14)
+        is_low_period = low_period_1 or low_period_2
 
         if is_low_period:
             num_staff = random.randint(8, 10)
-            levels = [random.choices([1, 2, 3], weights=[0.5, 0.3, 0.2])[0] for _ in range(num_staff)]
         else:
             num_staff = random.randint(16, 20)
-            levels = [random.choices([2, 3, 4, 5], weights=[0.2, 0.3, 0.3, 0.2])[0] for _ in range(num_staff)]
 
-        for i in range(num_staff):
+        # Sample employees from the pool
+        selected_employees = random.sample(employee_pool, num_staff)
+
+        for emp in selected_employees:
             records.append({
                 'date': day.date(),
                 'shift': shift,
-                'employee_id': f"E{emp_id_counter}",
-                'employee_level': levels[i],
-                'area': random.choice(areas)
+                'employee_id': emp['employee_id'],
+                'employee_level': emp['employee_level'],
+                'area': emp['area']
             })
-            emp_id_counter += 1
 
 # Convert to DataFrame
 df_hr = pd.DataFrame(records)
@@ -51,7 +65,7 @@ df_hr = pd.DataFrame(records)
 # Save to CSV
 df_hr.to_csv("hr_staffing_log.csv", index=False)
 
-# Insert into PostgreSQL (assumes table already created with uuid PK)
+# Insert into PostgreSQL
 def insert_hr_data_to_db(df):
     try:
         conn = psycopg2.connect(
