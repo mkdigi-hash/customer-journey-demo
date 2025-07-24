@@ -26,22 +26,22 @@ pword = os.getenv("POSTGRES_PASSWORD")
 
 # Configuration
 NUM_LOTS = 1
-WAFERS_PER_LOT = 20
+WAFERS_PER_LOT = 5
 SIZE_OF_DIE = 5     # this is an abitary unit of measurement
 TEST_TYPES = ['Parametric', 'Functional']
 PARAMETERS = {
     'Parametric': ['Vth', 'Idss', 'Ron', 'Ioff'],
     'Functional': ['Delay', 'Leakage', 'VoltageMargin']
 }
-ADD_DAYS = 0 # number of days to add to current time
 
 CSV_DIR = Path("test_result_logs")
 CSV_DIR.mkdir(exist_ok=True)
 
 
-def get_timestamped_filename():
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+def get_timestamped_filename(day_offset):
+    timestamp = (datetime.now() + timedelta(days=day_offset)).strftime("%Y%m%d_%H%M%S")
     return CSV_DIR / f"probe_log_{timestamp}.csv"
+
 
 def enforce_csv_limit(directory, max_files=7):
     files = sorted(directory.glob("probe_log_*.csv"), key=os.path.getmtime, reverse=True)
@@ -177,9 +177,10 @@ def connect_database(hostname: str, dbname: str, user: str, pword: str, port: in
     return conn
 
 
-def stream_probe_data():
-    csv_file = get_timestamped_filename()  # at the top of stream_probe_data()
+def stream_probe_data(day_offset):
+    csv_file = get_timestamped_filename(day_offset)
     init_csv(csv_file)
+    enforce_csv_limit(CSV_DIR) # deletes older csv files
 
     conn = connect_database(dbname=dbname, hostname=hostname, 
                               port=port, pword=pword, user=user)
@@ -196,9 +197,9 @@ def stream_probe_data():
 
             for die_x, die_y in die_coords:
                 for param in parameters:
-                    measured_value = generate_measure_value(param)
+                    measured_value = generate_measure_value_fails(param)
                     result = generate_pass_fail(measured_value, param)
-                    timestamp = datetime.now() + timedelta(days=ADD_DAYS)
+                    timestamp = datetime.now() + timedelta(days=day_offset)
 
                     row = {
                         'lot_id': lot_id,
@@ -212,7 +213,6 @@ def stream_probe_data():
                         'timestamp': timestamp.strftime('%Y-%m-%d %H:%M:%S')
                     }
 
-                    # Insert into DB
                     try:
                         logger.info("Inserting into wafer_probe_results: %s", row)
 
@@ -241,21 +241,19 @@ def stream_probe_data():
                         conn.rollback()
                     else:
                         conn.commit()
-                        logger.debug("Row inserted successfully.")
 
-                    # commit to db
-                    conn.commit()
-
-                    # write to CSV
                     append_to_csv(csv_file, row)
-
-                    # log file captures this but added for temp visibility
                     print(f"Inserted & logged: {row['lot_id']} / {row['wafer_id']} / {param} = {measured_value} ({result})")
-                    # time.sleep(0.05)  # Simulate probe time, can remove for speed
 
     cursor.close()
     conn.close()
-    print("Streaming and logging complete.")
+    print(f"Streaming and logging complete for simulated day {day_offset + 1}.")
+
 
 if __name__ == "__main__":
-    stream_probe_data()
+    start_offset = 10 # number of days from today to start test
+    end_offset = 80 # number of days from today to end test, inclusive of last day
+    for day_offset in range(start_offset, end_offset + 1):  # Simulates tests over range of days
+        print(f"\n=== Simulating Day {day_offset + 1} ===\n")
+        stream_probe_data(day_offset)
+        #time.sleep(1)  # Optional delay between days
