@@ -1,0 +1,5 @@
+lot_id,wafer_id,test_type,die_x,die_y,parameter,measured_value,pass_fail,timestamp
+LOT55EDF00C,W01,Functional,20,1,Delay,553.06397768607,FAIL,2025-09-19 13:34:28
+LOT55EDF00C,W01,Functional,20,1,Leakage,1.75583e-06,FAIL,2025-09-19 13:34:33
+LOT55EDF00C,W01,Functional,20,1,VoltageMargin,0.17361180839,FAIL,2025-09-19 13:34:38
+LOT55EDF00C,W01,Functional,14,2,Delay,550.64912103913,FAIL,2025-09-19 13:34:43

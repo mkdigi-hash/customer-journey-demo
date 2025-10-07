@@ -171,7 +171,7 @@ def connect_database(hostname: str, dbname: str, user: str, pword: str, port: in
         user=user,
         password=pword,
         host=hostname,
-        port=15432
+        port=port
     )
     logger.info("Connected!")
     return conn
@@ -181,9 +181,8 @@ def stream_probe_data(day_offset):
     csv_file = get_timestamped_filename(day_offset)
     init_csv(csv_file)
     enforce_csv_limit(CSV_DIR) # deletes older csv files
-
-    conn = connect_database(dbname=dbname, hostname=hostname, 
-                              port=port, pword=pword, user=user)
+    logger.info("Connecting to database...")
+    conn = connect_database(dbname=dbname, hostname=hostname, port=port, pword=pword, user=user)
     cursor = conn.cursor()
 
     for _ in range(NUM_LOTS):
@@ -241,7 +240,8 @@ def stream_probe_data(day_offset):
                         conn.rollback()
                     else:
                         conn.commit()
-
+                    
+                    time.sleep(5)
                     append_to_csv(csv_file, row)
                     print(f"Inserted & logged: {row['lot_id']} / {row['wafer_id']} / {param} = {measured_value} ({result})")
 
